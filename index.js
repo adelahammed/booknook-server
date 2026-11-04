@@ -3,7 +3,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import "dotenv/config";
 
-const PORT = process.env.MAIN_URI;
+const PORT = process.env.PORT || process.env.MAIN_URI || 5000;
 
 const app = express();
 app.use(cors());
@@ -29,3 +29,5 @@ app.get("/", (req, res) => {
 app.listen(PORT, () => {
   console.log(`Server is running on port ${PORT}`);
 });
+
+export default app;
