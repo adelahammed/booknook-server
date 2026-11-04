@@ -30,10 +30,19 @@ export async function connectToMongoDB() {
   }
 }
 
-connectToMongoDB();
+const connectDB = await connectToMongoDB();
+const db = connectDB.db("booknook");
+const booksCollection = db.collection("books");
 
-app.get("/", (req, res) => {
-  res.send("Hello, World!");
+app.get("/books", async (req, res) => {
+  const result = await booksCollection.find({}).toArray();
+  res.json(result);
+});
+
+app.post("/books", async (req, res) => {
+  const newBook = req.body;
+  const result = await booksCollection.insertOne(newBook);
+  res.json(result);
 });
 
 // Vercel serverless environment handles requests via export default app
