@@ -3,7 +3,7 @@ import cors from "cors";
 import { MongoClient } from "mongodb";
 import "dotenv/config";
 
-const PORT = 5000;
+const PORT = process.env.MAIN_URI;
 
 const app = express();
 app.use(cors());
