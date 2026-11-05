@@ -33,11 +33,16 @@ export async function connectToMongoDB() {
 const connectDB = await connectToMongoDB();
 const db = connectDB.db("booknook");
 const booksCollection = db.collection("books");
+const booksBorrowedCollection = db.collection("my-borrows");
 
-// app.get("/my-borrows:email", async (req, res) => {
-//   const result = await booksCollection.find({}).toArray();
-//   res.json(result);
-// });
+// Get borrowed books by user email
+app.get("/my-borrows/:email", async (req, res) => {
+  const email = req.params.email;
+
+  const result = await booksBorrowedCollection.find({ email }).toArray();
+
+  res.send(result);
+});
 
 app.get("/books", async (req, res) => {
   const result = await booksCollection.find({}).toArray();
