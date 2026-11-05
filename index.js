@@ -34,6 +34,11 @@ const connectDB = await connectToMongoDB();
 const db = connectDB.db("booknook");
 const booksCollection = db.collection("books");
 
+// app.get("/my-borrows:email", async (req, res) => {
+//   const result = await booksCollection.find({}).toArray();
+//   res.json(result);
+// });
+
 app.get("/books", async (req, res) => {
   const result = await booksCollection.find({}).toArray();
   res.json(result);
@@ -54,6 +59,12 @@ app.get("/books/:id", async (req, res) => {
 app.post("/books", async (req, res) => {
   const newBook = req.body;
   const result = await booksCollection.insertOne(newBook);
+  res.json(result);
+});
+
+app.post("/my-borrows", async (req, res) => {
+  const borrowBook = req.body;
+  const result = await booksBorrowedCollection.insertOne(borrowBook);
   res.json(result);
 });
 
