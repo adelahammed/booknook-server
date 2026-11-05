@@ -1,6 +1,6 @@
 import express from "express";
 import cors from "cors";
-import { MongoClient } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 import "dotenv/config";
 
 const PORT = process.env.PORT || process.env.MAIN_URI || 5000;
@@ -37,6 +37,18 @@ const booksCollection = db.collection("books");
 app.get("/books", async (req, res) => {
   const result = await booksCollection.find({}).toArray();
   res.json(result);
+});
+
+app.get("/books/:id", async (req, res) => {
+  const bookId = req.params.id;
+  const result = await booksCollection.findOne({
+    _id: new ObjectId(bookId),
+  });
+  if (result) {
+    res.json(result);
+  } else {
+    res.status(404).json({ message: "Book not found" });
+  }
 });
 
 app.post("/books", async (req, res) => {
