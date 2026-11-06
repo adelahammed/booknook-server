@@ -35,7 +35,6 @@ const db = connectDB.db("booknook");
 const booksCollection = db.collection("books");
 const booksBorrowedCollection = db.collection("my-borrows");
 
-// Get borrowed books by user email
 app.get("/my-borrows/:email", async (req, res) => {
   const email = req.params.email;
 
@@ -59,6 +58,26 @@ app.get("/books/:id", async (req, res) => {
   } else {
     res.status(404).json({ message: "Book not found" });
   }
+});
+
+app.put("/books/:id", async (req, res) => {
+  const id = req.params.id;
+  const updatedBook = req.body;
+
+  const result = await booksCollection.updateOne(
+    { _id: new ObjectId(id) },
+    { $set: updatedBook },
+  );
+  res.send(result);
+});
+
+app.delete("/books/:id", async (req, res) => {
+  const id = req.params.id;
+
+  const result = await booksCollection.deleteOne({
+    _id: new ObjectId(id),
+  });
+  res.send(result);
 });
 
 app.post("/books", async (req, res) => {
