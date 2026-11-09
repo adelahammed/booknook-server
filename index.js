@@ -35,14 +35,6 @@ const db = connectDB.db("booknook");
 const booksCollection = db.collection("books");
 const booksBorrowedCollection = db.collection("my-borrows");
 
-app.get("/my-borrows/:email", async (req, res) => {
-  const email = req.params.email;
-
-  const result = await booksBorrowedCollection.find({ email }).toArray();
-
-  res.send(result);
-});
-
 app.get("/books", async (req, res) => {
   const result = await booksCollection.find({}).toArray();
   res.json(result);
@@ -92,7 +84,83 @@ app.post("/my-borrows", async (req, res) => {
   res.json(result);
 });
 
-// Vercel serverless environment handles requests via export default app
+app.get("/my-borrows/:email", async (req, res) => {
+  try {
+    const email = req.params.email;
+
+    const result = await booksBorrowedCollection
+      .aggregate([
+        {
+          $match: { email },
+        },
+        {
+          $addFields: {
+            bookObjectId: {
+              $toObjectId: "$bookBorrowed",
+            },
+          },
+        },
+        {
+          $lookup: {
+            from: "books",
+            localField: "bookObjectId",
+            foreignField: "_id",
+            as: "bookDetails",
+          },
+        },
+        {
+          $unwind: "$bookDetails",
+        },
+        {
+          $replaceRoot: {
+            newRoot: {
+              $mergeObjects: [
+                "$bookDetails",
+                {
+                  borrowedDate: "$borrowedDate",
+                  dueDate: "$dueDate",
+                  borrowId: "$_id",
+                },
+              ],
+            },
+          },
+        },
+      ])
+      .toArray();
+
+    res.json(result);
+  } catch (error) {
+    console.error(error);
+    res.status(500).json({
+      message: "Failed to fetch borrowed books",
+    });
+  }
+});
+
+app.get("/my-borrows/:email/:bookId", async (req, res) => {
+  const { email, bookId } = req.params;
+  const result = await booksBorrowedCollection.findOne({
+    email: email,
+    bookBorrowed: bookId,
+  });
+  if (result) {
+    res.json(result);
+  } else {
+    res.status(404).json({ message: "Book not found" });
+  }
+});
+
+app.delete("/my-borrows/:email/:bookId", async (req, res) => {
+  const { email, bookId } = req.params;
+
+  const result = await booksBorrowedCollection.deleteOne({
+    email: email,
+    bookBorrowed: bookId,
+  });
+
+  res.send(result);
+});
+
 if (process.env.NODE_ENV !== "production" && !process.env.VERCEL) {
   app.listen(PORT, () => {
     console.log(`Server is running on port ${PORT}`);
