@@ -66,6 +66,23 @@ app.get("/books", async (req, res) => {
   res.json(result);
 });
 
+app.get("/latest-books", async (req, res) => {
+  const limit = parseInt(req.query.limit) || 10;
+
+  const result = await booksCollection
+    .find({})
+    .sort({ createdAt: -1 })
+    .limit(limit)
+    .toArray();
+
+  res.json(result);
+});
+
+app.get("/book-categories", async (req, res) => {
+  const categories = await booksCollection.distinct("category");
+  res.json(categories);
+});
+
 app.get("/books/:id", verifyToken, async (req, res) => {
   const bookId = req.params.id;
   const result = await booksCollection.findOne({
@@ -99,18 +116,27 @@ app.delete("/books/:id", verifyToken, async (req, res) => {
 });
 
 app.post("/books", verifyToken, async (req, res) => {
-  const newBook = req.body;
+  const newBook = {
+    ...req.body,
+    createdAt: new Date(),
+  };
   const result = await booksCollection.insertOne(newBook);
   res.json(result);
 });
 
-app.post("/my-borrows", verifyToken, async (req, res) => {
-  const borrowBook = req.body;
+app.post("/borrows", verifyToken, async (req, res) => {
+  const borrowDate = new Date();
+  const returnDate = new Date(borrowDate.getTime() + 20 * 24 * 60 * 60 * 1000);
+  const borrowBook = {
+    ...req.body,
+    borrowDate,
+    returnDate,
+  };
   const result = await booksBorrowedCollection.insertOne(borrowBook);
   res.json(result);
 });
 
-app.get("/my-borrows/:email", verifyToken, async (req, res) => {
+app.get("/borrows/:email", verifyToken, async (req, res) => {
   try {
     const email = req.params.email;
 
@@ -143,8 +169,8 @@ app.get("/my-borrows/:email", verifyToken, async (req, res) => {
               $mergeObjects: [
                 "$bookDetails",
                 {
-                  borrowedDate: "$borrowedDate",
-                  dueDate: "$dueDate",
+                  borrowedDate: "$borrowDate",
+                  dueDate: "$returnDate",
                   borrowId: "$_id",
                 },
               ],
@@ -163,7 +189,7 @@ app.get("/my-borrows/:email", verifyToken, async (req, res) => {
   }
 });
 
-app.get("/my-borrows/:email/:bookId", verifyToken, async (req, res) => {
+app.get("/borrows/:email/:bookId", verifyToken, async (req, res) => {
   const { email, bookId } = req.params;
   const result = await booksBorrowedCollection.findOne({
     email: email,
@@ -176,7 +202,7 @@ app.get("/my-borrows/:email/:bookId", verifyToken, async (req, res) => {
   }
 });
 
-app.delete("/my-borrows/:email/:bookId", verifyToken, async (req, res) => {
+app.delete("/borrows/:email/:bookId", verifyToken, async (req, res) => {
   const { email, bookId } = req.params;
 
   const result = await booksBorrowedCollection.deleteOne({
