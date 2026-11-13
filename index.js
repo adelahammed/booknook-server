@@ -48,8 +48,11 @@ const verifyToken = async (req, res, next) => {
     return res.status(401).send({ msg: "Unauthorized" });
   }
 
+  const authUrl = process.env.BETTER_AUTH_URL
+    ? process.env.BETTER_AUTH_URL.replace(/\/$/, "")
+    : "";
   const JWKS = createRemoteJWKSet(
-    new URL(`${process.env.BETTER_AUTH_URL}/api/auth/jwks`),
+    new URL(`${authUrl}/api/auth/jwks`),
   );
 
   try {
@@ -57,7 +60,7 @@ const verifyToken = async (req, res, next) => {
 
     next();
   } catch (error) {
-    return res.status(500).send({ msg: "Unauthorized!" });
+    return res.status(401).send({ msg: "Unauthorized!" });
   }
 };
 
@@ -148,7 +151,12 @@ app.get("/borrows/:email", verifyToken, async (req, res) => {
         {
           $addFields: {
             bookObjectId: {
-              $toObjectId: "$bookBorrowed",
+              $convert: {
+                input: "$bookBorrowed",
+                to: "objectId",
+                onError: null,
+                onNull: null,
+              },
             },
           },
         },
